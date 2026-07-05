@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The AI Bet Checker for Lawyers</title>
+<style>
+  :root{
+    --ink:#1c2430;
+    --muted:#5b6675;
+    --line:#e2e6ec;
+    --bg:#f6f8fb;
+    --card:#ffffff;
+    --accent:#2f6fb0;
+    --safe:#2e8b57;
+    --safe-bg:#e8f5ee;
+    --warn:#c47a12;
+    --warn-bg:#fdf3e2;
+    --risk:#c0392b;
+    --risk-bg:#fbeae8;
+    --track:#dfe4ec;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);
+    background:var(--bg);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:820px;margin:0 auto;padding:32px 20px 80px;}
+  header h1{font-size:1.7rem;margin:0 0 6px;}
+  header p.sub{color:var(--muted);margin:0 0 4px;font-size:1.02rem;}
+  header p.tiny{color:var(--muted);font-size:.86rem;margin:14px 0 0;}
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:22px 22px 18px;
+    margin:18px 0;
+    box-shadow:0 1px 2px rgba(20,30,45,.04);
+  }
+  .bet-title{font-size:1.12rem;font-weight:600;margin:0 0 2px;}
+  .bet-q{color:var(--muted);margin:0 0 16px;font-size:.96rem;}
+  .ends{display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted);margin-top:6px;gap:12px;}
+  .ends span{max-width:46%;}
+  .ends span:last-child{text-align:right;}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;
+    width:100%;height:8px;border-radius:6px;
+    background:var(--track);outline:none;margin:4px 0 0;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;
+    width:26px;height:26px;border-radius:50%;
+    background:var(--accent);cursor:pointer;border:3px solid #fff;
+    box-shadow:0 1px 4px rgba(20,30,45,.3);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:22px;height:22px;border-radius:50%;
+    background:var(--accent);cursor:pointer;border:3px solid #fff;
+  }
+  .val-row{display:flex;align-items:center;gap:10px;margin-top:14px;}
+  .val-badge{
+    font-weight:700;font-size:.95rem;min-width:44px;text-align:center;
+    padding:3px 8px;border-radius:6px;background:var(--bg);border:1px solid var(--line);
+  }
+  .reading{font-size:.93rem;flex:1;}
+  .tag{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.03em;
+    text-transform:uppercase;padding:2px 8px;border-radius:20px;margin-right:8px;vertical-align:middle;}
+  .tag.safe{background:var(--safe-bg);color:var(--safe);}
+  .tag.warn{background:var(--warn-bg);color:var(--warn);}
+  .tag.risk{background:var(--risk-bg);color:var(--risk);}
+
+  #result{position:sticky;bottom:0;}
+  .result-head{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 8px;}
+  .verdict{font-size:1.35rem;font-weight:700;margin:0 0 8px;}
+  .verdict small{display:block;font-size:.92rem;font-weight:400;color:var(--muted);margin-top:4px;}
+  .flag{
+    display:flex;gap:10px;align-items:flex-start;
+    border-radius:9px;padding:11px 13px;margin-top:12px;font-size:.92rem;
+  }
+  .flag.risk{background:var(--risk-bg);border:1px solid #f0c9c3;}
+  .flag.warn{background:var(--warn-bg);border:1px solid #f2ddb8;}
+  .flag.safe{background:var(--safe-bg);border:1px solid #c8e6d3;}
+  .flag b{display:block;}
+  .flag .ic{font-weight:700;}
+  .meter{height:10px;border-radius:6px;background:linear-gradient(90deg,#2e8b57 0%,#c9a227 50%,#2f6fb0 100%);position:relative;margin:14px 0 6px;}
+  .meter .pin{position:absolute;top:-5px;width:4px;height:20px;background:#1c2430;border-radius:2px;transform:translateX(-50%);transition:left .15s ease;}
+  .meter-ends{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);}
+  .btns{margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;}
+  button{
+    font:inherit;font-weight:600;cursor:pointer;border-radius:8px;padding:9px 16px;
+    border:1px solid var(--line);background:#fff;color:var(--ink);
+  }
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  footer{color:var(--muted);font-size:.82rem;margin-top:26px;}
+  .note{background:#eef3f8;border-left:3px solid var(--accent);padding:10px 14px;border-radius:0 8px 8px 0;font-size:.9rem;color:var(--muted);margin:16px 0 0;}
+  @media print{
+    input[type=range]{display:none;}
+    .btns{display:none;}
+    #result{position:static;}
+    body{background:#fff;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>The AI Bet Checker</h1>
+    <p class="sub">Deciding between a legal-specific AI tool (like Harvey) and building your own with general tools (Claude, ChatGPT)? Every choice is a bet. Set the four sliders to see which bets are safe, which are risky, and where you lean.</p>
+    <p class="tiny">Think of one specific tool you're weighing as you answer. Nothing you enter leaves this page.</p>
+  </header>
+
+  <!-- BET 1 -->
+  <div class="card">
+    <p class="bet-title">1. What am I really paying for?</p>
+    <p class="bet-q">Is the tool's value mostly <em>smarter answers</em>, or mostly <em>plugging into my systems</em> (my document files, court forms, client matters, workflow)?</p>
+    <input type="range" min="1" max="10" value="5" id="s1">
+    <div class="ends"><span>Mostly smarter answers</span><span>Mostly deep integration with my systems</span></div>
+    <div class="val-row"><span class="val-badge" id="v1">5</span><span class="reading" id="r1"></span></div>
+  </div>
+
+  <!-- BET 2 -->
+  <div class="card">
+    <p class="bet-title">2. How soon will a cheap general tool catch up?</p>
+    <p class="bet-q">How likely is it that Claude or ChatGPT, with good prompts, will do this job about as well within the next year?</p>
+    <input type="range" min="1" max="10" value="5" id="s2">
+    <div class="ends"><span>Very likely, and soon</span><span>Not for a long time</span></div>
+    <div class="val-row"><span class="val-badge" id="v2">5</span><span class="reading" id="r2"></span></div>
+  </div>
+
+  <!-- BET 3 -->
+  <div class="card">
+    <p class="bet-title">3. How hard would it be to leave?</p>
+    <p class="bet-q">If I wanted to switch later, can I export my data and walk away easily, or would I be deeply locked in?</p>
+    <input type="range" min="1" max="10" value="5" id="s3">
+    <div class="ends"><span>Easy to leave anytime</span><span>Deeply locked in</span></div>
+    <div class="val-row"><span class="val-badge" id="v3">5</span><span class="reading" id="r3"></span></div>
+  </div>
+
+  <!-- BET 4 -->
+  <div class="card">
+    <p class="bet-title">4. Does it protect client confidentiality?</p>
+    <p class="bet-q">Does the tool clearly promise not to train on my data, keep matters confidential, and give me a record of what it did?</p>
+    <input type="range" min="1" max="10" value="5" id="s4">
+    <div class="ends"><span>Unclear or weak</span><span>Strong, documented promises</span></div>
+    <div class="val-row"><span class="val-badge" id="v4">5</span><span class="reading" id="r4"></span></div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="card" id="result">
+    <p class="result-head">Your read</p>
+    <p class="verdict" id="verdict"></p>
+    <div class="meter"><div class="pin" id="pin"></div></div>
+    <div class="meter-ends"><span>Build your own</span><span>It depends</span><span>Buy the tool</span></div>
+    <div id="flags"></div>
+    <div class="btns">
+      <button class="primary" onclick="window.print()">Save / print this read</button>
+      <button onclick="resetAll()">Reset sliders</button>
+    </div>
+  </div>
+
+  <p class="note">This is a discussion starter, not legal or business advice. It reflects what you told it, nothing more. The point is to make your bets explicit so you notice sooner if one stops being true.</p>
+
+  <footer>
+    Based on the four-axis "make your bets explicit" idea from Dan Pupius (The General Partnership), translated for solo and small firm lawyers.
+  </footer>
+</div>
+
+<script>
+  var sliders = ['s1','s2','s3','s4'];
+
+  function readingText(id, val){
+    // Each returns {tag:'safe|warn|risk', text:''}
+    if(id==='s1'){
+      if(val>=7) return {tag:'safe', text:'You’re paying for integration — the hard-to-copy part. That’s a durable reason to buy.'};
+      if(val<=4) return {tag:'risk', text:'You’re mostly paying for smarts. General tools keep catching up cheaply, so this edge may fade.'};
+      return {tag:'warn', text:'A mix of smarts and plumbing. Ask which one you’d still pay for if the other were free.'};
+    }
+    if(id==='s2'){
+      if(val>=7) return {tag:'safe', text:'You expect a real head start. If true, the tool stays worth it for a while.'};
+      if(val<=4) return {tag:'risk', text:'You expect cheap tools to match this soon. Don’t lock into a long, pricey contract.'};
+      return {tag:'warn', text:'Unsure how fast the gap closes. Keep this bet loose and watch for change.'};
+    }
+    if(id==='s3'){
+      if(val>=7) return {tag:'risk', text:'Hard to reverse. Before committing, confirm you can export your data and have an exit.'};
+      if(val<=4) return {tag:'safe', text:'Easy to leave. That makes this a low-risk bet you can change your mind on.'};
+      return {tag:'warn', text:'Some lock-in. Check exactly what you could take with you if you left.'};
+    }
+    if(id==='s4'){
+      if(val>=7) return {tag:'safe', text:'Strong protections. For a lawyer, this is the box that has to be checked.'};
+      if(val<=4) return {tag:'risk', text:'Confidentiality is unclear. For lawyers this isn’t optional — resolve it before adopting.'};
+      return {tag:'warn', text:'Partial protection. Get the specifics in writing before trusting it with client data.'};
+    }
+  }
+
+  function compute(){
+    var v = {};
+    sliders.forEach(function(id){
+      v[id] = parseInt(document.getElementById(id).value,10);
+      document.getElementById('v'+id.slice(1)).textContent = v[id];
+      var r = readingText(id, v[id]);
+      document.getElementById('r'+id.slice(1)).innerHTML =
+        '<span class="tag '+r.tag+'">'+r.tag+' bet</span>'+r.text;
+    });
+
+    // Build-vs-buy lean uses bets 1 and 2 (value + head start).
+    var buy = (v.s1 + v.s2)/2; // 1..10
+    var pct = (buy-1)/9*100;
+    document.getElementById('pin').style.left = pct+'%';
+
+    var verdict='', sub='';
+    if(buy>=7){
+      verdict='Leans toward buying the tool';
+      sub='You’re paying for real integration and expect a lasting head start. A proprietary tool likely earns its price — if the flags below are handled.';
+    } else if(buy<=4){
+      verdict='Leans toward building your own';
+      sub='You’re mostly paying for smarts that cheap general tools may soon match. Your own Claude/ChatGPT setup is probably the smarter bet right now.';
+    } else {
+      verdict='It depends — a close call';
+      sub='The value and the head start are mixed. Let the flags below and your gut break the tie, and revisit in a few months.';
+    }
+    document.getElementById('verdict').innerHTML = verdict + '<small>'+sub+'</small>';
+
+    // Flags
+    var flags='';
+    if(v.s4<=4){
+      flags += flag('risk','⚠','Confidentiality gate','No matter which way you lean, don’t put client data into this until confidentiality and no-training terms are clear. For lawyers this comes first.');
+    }
+    if(v.s3>=7){
+      flags += flag('warn','↺','Hard-to-reverse bet','You’d be locked in. Make sure you can export your work and have an exit before you commit — favor tools you can leave.');
+    }
+    if(v.s1<=4 && v.s2<=4){
+      flags += flag('warn','↓','Fading edge','You’re paying for smarts that will get cheap. If you do buy, keep the commitment short.');
+    }
+    if(v.s4>=7 && v.s3<=4 && buy>=7){
+      flags += flag('safe','✓','Strong position','Good confidentiality, easy to leave, and a real reason to buy. This is about as safe as a buy decision gets.');
+    }
+    if(!flags){
+      flags = flag('safe','✓','No red flags','Nothing here is a dealbreaker. Write down what would tell you your bet is wrong, and check back in a few months.');
+    }
+    document.getElementById('flags').innerHTML = flags;
+  }
+
+  function flag(type,ic,title,body){
+    return '<div class="flag '+type+'"><span class="ic">'+ic+'</span><span><b>'+title+'</b>'+body+'</span></div>';
+  }
+
+  function resetAll(){
+    sliders.forEach(function(id){document.getElementById(id).value=5;});
+    compute();
+  }
+
+  sliders.forEach(function(id){
+    document.getElementById(id).addEventListener('input', compute);
+  });
+  compute();
+</script>
+</body>
+</html>
